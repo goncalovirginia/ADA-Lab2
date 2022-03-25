@@ -1,52 +1,54 @@
 public class TeamFormations {
 	
-	private int totalPlayers, lastRole;
-	private boolean[] isMin;
-	private int[] conditionPlayers;
+	private final int totalPlayers, lastRole;
+	private final int[][] rolesMinMax;
 	
 	public TeamFormations(int totalPlayers, int roles) {
 		this.totalPlayers = totalPlayers;
 		lastRole = roles - 1;
-		isMin = new boolean[roles];
-		conditionPlayers = new int[roles];
+		rolesMinMax = new int[roles][2];
 	}
 	
-	public void setRole(int role, boolean isMin, int rolePlayers) {
-		this.isMin[role] = isMin;
-		this.conditionPlayers[role] = rolePlayers;
+	public void setRole(int role, boolean isMin, int players) {
+		int[] roleMinMax = rolesMinMax[role];
+		
+		if (isMin) {
+			roleMinMax[0] = players;
+			roleMinMax[1] = totalPlayers;
+		}
+		else {
+			roleMinMax[1] = players;
+		}
 	}
 	
 	public int getNumRoles() {
-		return isMin.length;
+		return rolesMinMax.length;
 	}
 	
 	public long calculateFormations() {
-		return calculateFormations(0, totalPlayers);
-	}
-	
-	public long calculateFormations(int role, int remainingPlayers) {
-		int min = 0, max = conditionPlayers[role];
-	
-		if (isMin[role]) {
-			min = conditionPlayers[role];
-			max = remainingPlayers;
+		long[][] table = new long[lastRole + 1][totalPlayers + 1];
+		int[] currentRoleMinMax = rolesMinMax[lastRole];
+		long[] currentRole = table[lastRole], previousRole;
+		
+		for (int c = currentRoleMinMax[0]; c <= currentRoleMinMax[1]; c++) {
+			currentRole[totalPlayers - c] = 1;
 		}
 		
-		if (remainingPlayers < min || role == lastRole && remainingPlayers > max) {
-			return 0;
-		}
-		if (role == lastRole) {
-			return 1;
+		for (int role = lastRole - 1; role >= 0; role--) {
+			currentRoleMinMax = rolesMinMax[role];
+			currentRole = table[role];
+			previousRole = table[role + 1];
+			
+			for (int c = currentRoleMinMax[0]; c <= currentRoleMinMax[1]; c++) {
+				for (int p = 0; p <= totalPlayers; p++) {
+					if (previousRole[p] > 0 && c <= p) {
+						currentRole[p - c] += previousRole[p];
+					}
+				}
+			}
 		}
 		
-		int minMax = Math.min(remainingPlayers, max);
-		long sum = 0;
-		
-		for (int i = min; i <= minMax; i++) {
-			sum += calculateFormations(role + 1, remainingPlayers - i);
-		}
-		
-		return sum;
+		return table[0][0];
 	}
 	
 }
